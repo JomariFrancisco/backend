@@ -25,6 +25,10 @@ user_devices = db['UserDevices']
 
 connected_devices = {}
 
+@app.route('/')
+def index():
+    return "<h1>Welcome to the Flask Index Page!</h1>"
+    
 @socketio.on('connect')
 def handle_connect():
     print("A device connected.")
