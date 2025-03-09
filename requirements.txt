@@ -1,0 +1,9 @@
+Flask
+Flask-SocketIO
+Flask-JWT-Extended
+Flask-Cors
+pymongo
+bcrypt
+eventlet
+dnspython
+gunicorn
