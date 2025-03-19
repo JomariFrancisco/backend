@@ -46,7 +46,9 @@ def send_latest_data(data):
         }, room=request.sid)
         print(f"📡 Sent latest sensor data for user {user_id}")
 
-
+@socketio.on("temp_humi_update")
+def fetch_temp_humi(data):
+        socketio.emit("fetch_temp_humi", {"user_id": user_id})
 
 @socketio.on('device_status_update')
 def handle_device_status_update(data):
