@@ -56,31 +56,6 @@ def handle_disconnect():
     # Print the updated list of connected devices
     print("Connected devices:", connected_devices)
 
-@app.route("/register", methods=["POST"])
-def register():
-    """Register a new user"""
-    data = request.get_json()
-    name = data.get("name")
-    email = data.get("email")
-    password = data.get("password")
-
-    # Check if user already exists
-    if users_collection.find_one({"email": email}):
-        return jsonify({"status": "error", "data": "User Already Exists!"}), 400
-
-    # Hash the password before storing
-    hashed_password = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt())
-
-    # Insert user into database
-    user_id = users_collection.insert_one({
-        "name": name,
-        "email": email,
-        "password": hashed_password
-    }).inserted_id
-
-    return jsonify({"status": "ok", "data": "User Created", "user_id": str(user_id)}), 201
-    
-
 @app.route("/login-user", methods=["POST"])
 def login():
     data = request.get_json()
