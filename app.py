@@ -25,6 +25,19 @@ users_collection = db["UserInfo"]
 collection = db['Device']
 user_devices = db['UserDevices']
 
+@socketio.on('device_status_update')
+def handle_device_status_update(data):
+    user_id = data.get('user_id')
+    message = data.get('message')
+
+    socketio.emit('status_notification', {
+            'user_id': user_id, 
+            'message': message,
+            'latest_audio': latest_audio,
+            'screen': 'Notification'  
+        })
+
+    print(f"Received status update for user_id {user_id}: {message}")
 
 @socketio.on('check_and_connect_device')
 def handle_device_check_and_connect(data):
