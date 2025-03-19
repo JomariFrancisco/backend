@@ -24,7 +24,7 @@ db = client['JomsDB']
 users_collection = db["UserInfo"]
 collection = db['Device']
 user_devices = db['UserDevices']
-
+data_recordings = db['dataRecordings']
 
 @socketio.on("request_latest_data")
 def send_latest_data(data):
