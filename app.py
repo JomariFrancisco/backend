@@ -7,6 +7,7 @@ from flask_cors import CORS
 from flask_jwt_extended import JWTManager, create_access_token, create_refresh_token, jwt_required, get_jwt_identity
 import bcrypt
 from bson import ObjectId
+from datetime import datetime, timedelta
 
 
 app = Flask(__name__)
@@ -26,6 +27,7 @@ collection = db['Device']
 user_devices = db['UserDevices']
 data_recordings = db['dataRecordings']
 
+
 @socketio.on("request_latest_data")
 def send_latest_data(data):
     """Send the latest temperature & humidity for a specific user."""
@@ -40,9 +42,10 @@ def send_latest_data(data):
             "user_id": user_id,
             "temperature": latest_record["temperature"],
             "humidity": latest_record["humidity"],
-            "timestamp": latest_record["timestamp"]
+            "timestamp": latest_record["timestamp"].isoformat()  # Convert datetime to string
         }, room=request.sid)
         print(f"📡 Sent latest sensor data for user {user_id}")
+
 
 
 @socketio.on('device_status_update')
