@@ -92,6 +92,11 @@ def fetch_temp_humi(data):
     user_id = data.get("user_id")
     socketio.emit("fetch_temp_humi", {"user_id": user_id})
 
+@socketio.on("notif_update")
+def fetch_new_notif(data):
+    user_id = data.get("user_id")
+    socketio.emit("fetch_new_notif", {"user_id": user_id})
+
 @socketio.on('device_status_update')
 def handle_device_status_update(data):
     user_id = data.get('user_id')
