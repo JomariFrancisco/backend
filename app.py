@@ -95,7 +95,30 @@ def fetch_temp_humi(data):
 @socketio.on("notif_update")
 def fetch_new_notif(data):
     user_id = data.get("user_id")
-    socketio.emit("fetch_new_notif", {"user_id": user_id})
+
+    if not user_id:
+        return
+
+    # Fetch latest notifications for the user
+    notifications_cursor = notifications.find({"user_id": user_id}).sort("timestamp", DESCENDING).limit(10)
+
+    notifications_list = [
+        {
+            "id": str(notification["_id"]),
+            "title": notification.get("title", "No Title"),
+            "message": notification.get("message", "No Message"),
+            "recommendation": notification.get("recommendation", "No Recommendation"),
+            "timestamp": notification["timestamp"].isoformat(),
+        }
+        for notification in notifications_cursor
+    ]
+
+    # Emit the correct format
+    socketio.emit("fetch_new_notif", {
+        "user_id": user_id,
+        "notifications": notifications_list,
+    })
+    print(f"📡 Sent {len(notifications_list)} new notifications to user {user_id}")
 
 @socketio.on('device_status_update')
 def handle_device_status_update(data):
