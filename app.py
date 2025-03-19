@@ -28,6 +28,7 @@ users_collection = db["UserInfo"]
 collection = db['Device']
 user_devices = db['UserDevices']
 data_recordings = db['dataRecordings']
+user_notifs = db['UserNotif']
 
 
 @socketio.on("request_notifications")
