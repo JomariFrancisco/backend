@@ -10,7 +10,8 @@ from bson import ObjectId
 
 
 app = Flask(__name__)
-socketio = SocketIO(app, cors_allowed_origins="*")
+socketio = SocketIO(app, async_mode="eventlet", cors_allowed_origins="*") # Ensure eventlet is used correctly
+
 CORS(app)
 app.config['JWT_SECRET_KEY'] = "a9f8b27c9d3e4f5b6c7d8e9f1029384756c7d8e9f1029384756a7b8c9d0e1f2"
 app.config["JWT_ACCESS_TOKEN_EXPIRES"] = 900  # 15 minutes
