@@ -25,6 +25,26 @@ users_collection = db["UserInfo"]
 collection = db['Device']
 user_devices = db['UserDevices']
 
+
+@socketio.on("request_latest_data")
+def send_latest_data(data):
+    """Send the latest temperature & humidity for a specific user."""
+    user_id = data.get("user_id")
+    if not user_id:
+        return
+
+    latest_record = data_recordings.find_one({"user_id": user_id}, sort=[("timestamp", -1)])
+
+    if latest_record:
+        socketio.emit("latest_sensor_data", {
+            "user_id": user_id,
+            "temperature": latest_record["temperature"],
+            "humidity": latest_record["humidity"],
+            "timestamp": latest_record["timestamp"]
+        }, room=request.sid)
+        print(f"📡 Sent latest sensor data for user {user_id}")
+
+
 @socketio.on('device_status_update')
 def handle_device_status_update(data):
     user_id = data.get('user_id')
