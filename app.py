@@ -26,6 +26,136 @@ collection = db['Device']
 user_devices = db['UserDevices']
 
 
+@socketio.on('check_and_connect_device')
+def handle_device_check_and_connect(data):
+    device_name = data.get('deviceName')
+    user_id = data.get('uid')
+
+    print(f"Received device name: {device_name}")
+    print(f"Received User: {user_id}")
+
+    # Search for the device in the collection
+    device = collection.find_one({"device_name": device_name})
+    if device:
+        device_id = str(device.get('_id'))
+        current_connection_status = device.get('connection')
+
+        if current_connection_status == "connected":
+            # Emit a response indicating the device is already paired
+            socketio.emit('response', {
+                'success': False,
+                'message': 'Device is already paired with another device',
+                'connection': 'connected',
+                'deviceId': device_id
+            })
+            print(f"Device {device_name} is already paired with another device.")
+            return
+
+        # Update the device status to 'online' and connection to 'connected'
+        collection.update_one(
+            {"_id": ObjectId(device_id)},
+            {"$set": {"connection": "connected"}}
+        )
+        print('Device updated and saved!')
+
+        # Save the device ID in the UserDevices collection
+        user_device = user_devices.find_one({"device_id": device_id})
+        if not user_device:
+            # If no entry exists, insert a new document
+            user_devices.insert_one({
+                "user_id": user_id,
+                "deviceId": device_id
+            })
+            print(f"New user device entry created for user_id: {user_id}")
+        else:
+            print(f"User device entry already exists for user_id: {user_id}")
+
+        # Emit a success response with the updated status and device ID
+        socketio.emit('response', {
+            'success': True,
+            'message': 'Device Found',
+            'connection': 'connected',
+            'deviceId': device_id
+        })
+    else:
+        # Emit a failure response if the device is not found
+        socketio.emit('response', {
+            'success': False,
+            'message': 'Device Not Found',
+            'status': 'offline',
+            'deviceId': None
+        })
+
+
+@socketio.on('disconnect_device')
+def disconnect_device(data):
+    device_id = data.get('deviceId')
+
+    if not device_id:
+        print("No device ID provided for disconnect.")
+        return socketio.emit('device_disconnected_response', {
+            'success': False,
+            'message': 'Device ID is required'
+        })
+
+    # Find the device by its ID in the database
+    device = collection.find_one({"_id": ObjectId(device_id)})
+
+    if not device:
+        print(f"Device with ID {device_id} not found.")
+        return socketio.emit('device_disconnected_response', {
+            'success': False,
+            'message': 'Device not found'
+        })
+
+    user_devices.delete_one({"deviceId": device_id})
+    print(f"Device {device_id} removed from UserDevices collection.")
+
+    collection.update_one(
+        {"_id": ObjectId(device_id)},
+        {"$set": {"connection": "disconnected"}}
+    )
+
+    # Remove from connected devices if present
+    device_name = device.get("device_name")
+    sid_to_remove = None
+    for sid, name in connected_devices.items():
+        if name == device_name:
+            sid_to_remove = sid
+            break
+
+    if sid_to_remove:
+        connected_devices.pop(sid_to_remove, None)
+
+    print(f"Device {device_name} disconnected successfully.")
+
+    # Emit response to client
+    socketio.emit('device_disconnected_response', {
+        'success': True,
+        'message': 'Device disconnected successfully',
+        'deviceId': device_id
+    })
+
+
+
+@socketio.on('fetch_user_devices')
+def fetch_user_devices(data):
+    user_id = data.get('uid')
+    userdevices = user_devices.find({"user_id": user_id})
+    devices = []
+
+    for userdevice in userdevices:
+        device_id = userdevice.get("deviceId")
+        device = collection.find_one({"_id": ObjectId(device_id)})
+        if device:
+            devices.append({
+                "deviceId": str(device["_id"]),  # Convert ObjectId to string
+                "deviceName": device.get("device_name"),
+                "status": device.get("status", "Unknown")
+            })
+
+    print(devices)  
+    socketio.emit('user_devices_response', {"devices": devices})
 
 connected_devices = {}
 
