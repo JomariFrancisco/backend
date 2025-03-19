@@ -4,7 +4,7 @@ from pymongo import MongoClient
 from flask import Flask, request, jsonify
 from flask_socketio import SocketIO
 from flask_cors import CORS
-from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity, JWTManager
+from flask_jwt_extended import JWTManager, create_access_token, create_refresh_token, jwt_required, get_jwt_identity
 import bcrypt
 from bson import ObjectId
 
@@ -13,6 +13,8 @@ app = Flask(__name__)
 socketio = SocketIO(app, cors_allowed_origins="*")
 CORS(app)
 app.config['JWT_SECRET_KEY'] = "a9f8b27c9d3e4f5b6c7d8e9f1029384756c7d8e9f1029384756a7b8c9d0e1f2"
+app.config["JWT_ACCESS_TOKEN_EXPIRES"] = 900  # 15 minutes
+app.config["JWT_REFRESH_TOKEN_EXPIRES"] = 7 * 24 * 60 * 60  # 7 days
 jwt = JWTManager(app)
 
 
@@ -110,11 +112,22 @@ def login():
 
     # Create JWT token
     access_token = create_access_token(identity=str(user["_id"]))
-    
-    return jsonify({"status": "success", "token": access_token}), 200
+    refresh_token = create_refresh_token(identity=str(user["_id"]))
 
+    return jsonify({"status": "success", "access_token": access_token, "refresh_token": refresh_token}), 200
 
+@app.route("/refresh-token", methods=["POST"])
+@jwt_required(refresh=True)  
+def refresh_token():
+    user_id = get_jwt_identity()
 
+    new_access_token = create_access_token(identity=user_id)
+
+    new_refresh_token = create_refresh_token(identity=user_id)
+
+    return jsonify({"access_token": new_access_token, "refresh_token": new_refresh_token}), 200
+
+# Get User Data (Protected)
 @app.route("/userdata", methods=["POST"])
 @jwt_required()
 def get_userdata():
@@ -124,17 +137,18 @@ def get_userdata():
         if not user_id:
             print("No user ID found in token.")
             return jsonify({"status": "error", "data": "Invalid token"}), 401
-        
+
         user = users_collection.find_one({"_id": ObjectId(user_id)})
 
         if not user:
             print("User not found")
             return jsonify({"status": "error", "data": "User not found"}), 404
-            
+
         user_data = {
-            "id": str(user["_id"]),  # MongoDB ObjectId needs to be converted to string
+            "id": str(user["_id"]), 
             "name": user.get("name"),
-            "email": user.get("email")
+            "email": user.get("email"),
+            "profile_picture": user.get("profile_picture", "")  
         }
 
         return jsonify({"status": "ok", "data": user_data}), 200
@@ -142,6 +156,48 @@ def get_userdata():
     except Exception as e:
         print(f"Error: {e}")
         return jsonify({"status": "error", "data": "An error occurred"}), 500
+
+@app.route("/register", methods=["POST"])
+def register():
+    """Register a new user"""
+    data = request.get_json()
+    name = data.get("name")
+    email = data.get("email")
+    password = data.get("password")
+
+    # Check if user already exists
+    if users_collection.find_one({"email": email}):
+        return jsonify({"status": "error", "data": "User Already Exists!"}), 400
+
+    # Hash the password before storing
+    hashed_password = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt())
+
+    # Insert user into database
+    user_id = users_collection.insert_one({
+        "name": name,
+        "email": email,
+        "password": hashed_password
+    }).inserted_id
+
+    return jsonify({"status": "ok", "data": "User Created", "user_id": str(user_id)}), 201
+
+
+@app.route('/update-profile', methods=['POST'])
+def update_profile():
+    data = request.json
+    user_email = data.get("email")  # Ensure email is sent in request
+    new_name = data.get("name")
+    new_profile_picture = data.get("profile_picture")
+
+    if not user_email:
+        return jsonify({"status": "error", "message": "Email is required"}), 400
+
+    users_collection.update_one(
+        {"email": user_email}, 
+        {"$set": {"name": new_name, "profile_picture": new_profile_picture}}
+    )
+
+    return jsonify({"status": "ok", "message": "Profile updated successfully!"})
 
 
 @socketio.on('register_device')
@@ -245,4 +301,5 @@ def fetch_user_devices(data):
     
 if __name__ == '__main__':
     socketio.run(app, host='0.0.0.0', port=5000)
+
 
