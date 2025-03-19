@@ -8,6 +8,8 @@ from flask_jwt_extended import JWTManager, create_access_token, create_refresh_t
 import bcrypt
 from bson import ObjectId
 from datetime import datetime, timedelta
+from pymongo import DESCENDING
+
 
 
 app = Flask(__name__)
@@ -27,6 +29,44 @@ collection = db['Device']
 user_devices = db['UserDevices']
 data_recordings = db['dataRecordings']
 
+
+@socketio.on("request_notifications")
+def send_notifications(data):
+    """Send paginated notifications for a specific user."""
+    user_id = data.get("user_id")
+    page = data.get("page", 1)  # Default to page 1
+    per_page = 10  # Fetch 10 notifications at a time
+
+    if not user_id:
+        return
+
+    # Query the database for the user's notifications
+    notifications_cursor = notifications.find({"user_id": user_id}).sort("timestamp", DESCENDING).skip((page - 1) * per_page).limit(per_page)
+    
+    notifications_list = [
+        {
+            "id": str(notification["_id"]),
+            "title": notification["title"],
+            "message": notification["message"],
+            "recommendation": notification["recommendation"],
+            "timestamp": notification["timestamp"].isoformat(),
+        }
+        for notification in notifications_cursor
+    ]
+
+    # Check if there are more notifications
+    total_notifications = notifications.count_documents({"user_id": user_id})
+    has_more = (page * per_page) < total_notifications
+
+    # Emit the paginated notifications
+    socketio.emit("latest_notifications", {
+        "notifications": notifications_list,
+        "page": page,
+        "has_more": has_more,
+    }, room=request.sid)
+
+    print(f"📡 Sent {len(notifications_list)} notifications (Page {page}) to user {user_id}")
+    
 
 @socketio.on("request_latest_data")
 def send_latest_data(data):
