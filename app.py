@@ -33,7 +33,6 @@ def handle_device_status_update(data):
     socketio.emit('status_notification', {
             'user_id': user_id, 
             'message': message,
-            'latest_audio': latest_audio,
             'screen': 'Notification'  
         })
 
