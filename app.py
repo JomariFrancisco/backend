@@ -36,37 +36,28 @@ def handle_get_data(data):
     try:
         user_id = data.get("user_id")
         selected_date = data.get("date")
+        page = int(data.get("page", 1))  # Default to page 1
+        limit = 10  # Fetch 10 records per request
 
         if not user_id or not selected_date:
             socketio.emit("data-response", {"success": False, "error": "Missing user_id or date"})
             return
 
-        # Convert date to start & end of the day for filtering
         start_date = datetime.strptime(selected_date, "%Y-%m-%d")
-        end_date = start_date.replace(hour=23, minute=59, second=59)
 
-        # Fetch data for the specific user and date
+
+        # Fetch paginated data
         records = list(data_recordings.find(
-            {
-                "user_id": user_id,  # Filter by user_id
-                "timestamp": {"$gte": start_date, "$lte": end_date}  # Filter by date range
-            }
-        ))
+            {"user_id": user_id, "timestamp": {"$gte": start_date}}
+        ).sort("timestamp", -1).skip((page - 1) * limit).limit(limit))
 
-        # Format the response data
-        data = [
-            {
-                "id": str(record["_id"]),
-                "temperature": record.get("temperature", ""),
-                "humidity": record.get("humidity", ""),
-                "timestamp": record["timestamp"].isoformat()
-            }
-            for record in records
-        ]
+
+        data = [{"id": str(record["_id"]), "temperature": record.get("temperature"), "humidity": record.get("humidity"), "timestamp": record["timestamp"].isoformat()} for record in records]
 
         socketio.emit("data-response", {"success": True, "data": data})
     except Exception as e:
         socketio.emit("data-response", {"success": False, "error": str(e)})
+
 
 @socketio.on("request_notifications")
 def send_notifications(data):
