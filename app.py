@@ -34,21 +34,29 @@ notifications = db['UserNotif']
 @socketio.on("get-data")
 def handle_get_data(data):
     try:
-        selected_date = data.get("date")  # Get date from request
-        if not selected_date:
-            selected_date = datetime.utcnow().strftime("%Y-%m-%d")  # Default to today if no date provided
-        
-        # Convert to MongoDB datetime range
+        user_id = data.get("user_id")
+        selected_date = data.get("date")
+
+        if not user_id or not selected_date:
+            socketio.emit("data-response", {"success": False, "error": "Missing user_id or date"})
+            return
+
+        # Convert date to start & end of the day for filtering
         start_date = datetime.strptime(selected_date, "%Y-%m-%d")
         end_date = start_date.replace(hour=23, minute=59, second=59)
 
-        # Fetch data only for the selected date
-        records = list(data_recordings.find({"timestamp": {"$gte": start_date, "$lte": end_date}}))
+        # Fetch data for the specific user and date
+        records = list(data_recordings.find(
+            {
+                "user_id": user_id,  # Filter by user_id
+                "timestamp": {"$gte": start_date, "$lte": end_date}  # Filter by date range
+            }
+        ))
 
+        # Format the response data
         data = [
             {
                 "id": str(record["_id"]),
-                "device_id": record.get("device_id", ""),
                 "temperature": record.get("temperature", ""),
                 "humidity": record.get("humidity", ""),
                 "timestamp": record["timestamp"].isoformat()
@@ -59,7 +67,6 @@ def handle_get_data(data):
         socketio.emit("data-response", {"success": True, "data": data})
     except Exception as e:
         socketio.emit("data-response", {"success": False, "error": str(e)})
-
 
 @socketio.on("request_notifications")
 def send_notifications(data):
