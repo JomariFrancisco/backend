@@ -39,25 +39,26 @@ def handle_get_data(data):
         page = int(data.get("page", 1))  # Default to page 1
         limit = 10  # Fetch 10 records per request
 
+        print(f"Fetching page {page} for user {user_id} on {selected_date}")  # Debugging
+
         if not user_id or not selected_date:
             socketio.emit("data-response", {"success": False, "error": "Missing user_id or date"})
             return
 
         start_date = datetime.strptime(selected_date, "%Y-%m-%d")
 
-
-        # Fetch paginated data
+        # Fetch paginated data, sorting from latest to oldest
         records = list(data_recordings.find(
             {"user_id": user_id, "timestamp": {"$gte": start_date}}
-        ).sort("timestamp", -1).skip((page - 1) * limit).limit(limit))
-
+        ).sort("timestamp", -1)  # Sort newest first
+        .skip((page - 1) * limit)
+        .limit(limit))
 
         data = [{"id": str(record["_id"]), "temperature": record.get("temperature"), "humidity": record.get("humidity"), "timestamp": record["timestamp"].isoformat()} for record in records]
 
         socketio.emit("data-response", {"success": True, "data": data})
     except Exception as e:
         socketio.emit("data-response", {"success": False, "error": str(e)})
-
 
 @socketio.on("request_notifications")
 def send_notifications(data):
