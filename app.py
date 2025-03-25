@@ -31,6 +31,27 @@ data_recordings = db['dataRecordings']
 notifications = db['UserNotif']
 
 
+@socketio.on("get-data")
+def handle_get_data():
+    try:
+        records = list(data_recordings.find().sort("timestamp", DESCENDING).limit(10))  # Fetch latest 10 records
+
+        data = [
+            {
+                "id": str(record["_id"]),
+                "device_id": record.get("device_id", ""),
+                "temperature": record.get("temperature", ""),
+                "humidity": record.get("humidity", ""),
+                "timestamp": record["timestamp"].isoformat()
+            }
+            for record in records
+        ]
+
+        socketio.emit("data-response", {"success": True, "data": data})  # Emit to all connected clients
+    except Exception as e:
+        socketio.emit("data-response", {"success": False, "error": str(e)})
+
+
 @socketio.on("request_notifications")
 def send_notifications(data):
     """Send paginated notifications for a specific user."""
