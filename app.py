@@ -219,6 +219,8 @@ def handle_device_check_and_connect(data):
             'connection': 'connected',
             'deviceId': device_id
         })
+        socketio.emit("set_to_offline")
+
     else:
         # Emit a failure response if the device is not found
         socketio.emit('response', {
@@ -322,7 +324,7 @@ def handle_disconnect():
             {"$set": {"status": "offline"}}
         )
         print(f"Device {device_name} status set to 'offline'.")
-
+        socketio.emit("set_to_offline")
     else:
         print("Device disconnected unexpectedly.")
 
