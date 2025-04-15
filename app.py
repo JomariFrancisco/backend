@@ -311,7 +311,8 @@ def index():
 def handle_connect():
     print("A device connected.")
     print("Connected devices:", connected_devices)
-
+    socketio.emit("set_to_offline")
+    
 @socketio.on('disconnect')
 def handle_disconnect():
     device_name = connected_devices.pop(request.sid, None)
