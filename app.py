@@ -482,6 +482,8 @@ def register_device(data):
 def handle_device_check_and_connect(data):
     device_name = data.get('deviceName')
     user_id = data.get('uid')
+    start_date = data.get('start_date')
+
 
     print(f"Received device name: {device_name}")
     print(f"Received User: {user_id}")
@@ -510,9 +512,11 @@ def handle_device_check_and_connect(data):
 
         user_device = user_devices.find_one({"device_id": device_id})
         if not user_device:
+            # If no entry exists, insert a new document
             user_devices.insert_one({
                 "user_id": user_id,
-                "deviceId": device_id
+                "device_id": device_id,  # use snake_case to match query
+                "start_date": start_date
             })
             print(f"New user device entry created for user_id: {user_id}")
         else:
