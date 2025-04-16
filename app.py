@@ -172,10 +172,11 @@ def handle_device_status_update(data):
 def handle_device_check_and_connect(data):
     device_name = data.get('deviceName')
     user_id = data.get('uid')
+    start_date = data.get('start_date')
 
     print(f"Received device name: {device_name}")
     print(f"Received User: {user_id}")
-
+    
     # Search for the device in the collection
     device = collection.find_one({"device_name": device_name})
     if device:
@@ -206,7 +207,8 @@ def handle_device_check_and_connect(data):
             # If no entry exists, insert a new document
             user_devices.insert_one({
                 "user_id": user_id,
-                "deviceId": device_id
+                "deviceId": device_id,
+                "start_date": start_date
             })
             print(f"New user device entry created for user_id: {user_id}")
         else:
