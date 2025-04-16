@@ -208,7 +208,7 @@ def handle_device_check_and_connect(data):
             # If no entry exists, insert a new document
             user_devices.insert_one({
                 "user_id": user_id,
-                "deviceId": device_id,
+                "device_id": device_id,  # use snake_case to match query
                 "start_date": start_date
             })
             print(f"New user device entry created for user_id: {user_id}")
