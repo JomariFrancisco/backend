@@ -176,6 +176,7 @@ def handle_device_check_and_connect(data):
 
     print(f"Received device name: {device_name}")
     print(f"Received User: {user_id}")
+    print(f"Received Date: {start_date}")
     
     # Search for the device in the collection
     device = collection.find_one({"device_name": device_name})
