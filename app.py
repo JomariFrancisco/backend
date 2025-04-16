@@ -227,7 +227,7 @@ def fetch_user_devices(data):
     devices = []
 
     for userdevice in userdevices:
-        device_id = userdevice.get("device_Id")
+        device_id = userdevice.get("device_id")
         device = collection.find_one({"_id": ObjectId(device_id)})
         if device:
             devices.append({
