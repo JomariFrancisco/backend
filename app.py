@@ -218,8 +218,6 @@ def disconnect_device(data):
         'deviceId': device_id
     })
 
-
-
 @socketio.on('fetch_user_devices')
 def fetch_user_devices(data):
     user_id = data.get('uid')
@@ -231,9 +229,10 @@ def fetch_user_devices(data):
         device = collection.find_one({"_id": ObjectId(device_id)})
         if device:
             devices.append({
-                "deviceId": str(device["_id"]),  # Convert ObjectId to string
+                "deviceId": str(device["_id"]), 
                 "deviceName": device.get("device_name"),
-                "status": device.get("status", "Unknown")
+                "status": device.get("status", "Unknown"),
+                "live_link": device.get("live_link", None)  
             })
 
     print(devices)  
