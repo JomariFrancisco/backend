@@ -392,6 +392,7 @@ def update_profile():
 @socketio.on('register_device')
 def register_device(data):
     device_name = data.get('deviceName')
+    tunnel = data.get('tunnel')
     
     if device_name:
         connected_devices[request.sid] = device_name
@@ -401,17 +402,24 @@ def register_device(data):
             collection.insert_one({
                 "device_name": device_name,
                 "status": "online",
+                "live_link": tunnel,
             })
-            print(f"New device {device_name} added to the collection with status 'online'.")
+            print(f"🆕 New device {device_name} added to the collection with status 'online'.")
         else:
             collection.update_one(
                 {"device_name": device_name},
-                {"$set": {"status": "online"}}
+                {
+                    "$set": {
+                        "status": "online",
+                        "live_link": tunnel
+                    }
+                }
             )
-            print(f"Device {device_name} status updated to 'online'.")
+            print(f"🔄 Device {device_name} status updated to 'online' and live link updated.")
 
-        print(f"Device {device_name} registered.")
-        print("Connected devices:", connected_devices)
+        print(f"✅ Device {device_name} registered.")
+        print("🔗 Connected devices:", connected_devices)
+
 
 @socketio.on('check_and_connect_device')
 def handle_device_check_and_connect(data):
