@@ -239,7 +239,9 @@ def fetch_user_devices(data):
                 "deviceId": str(device["_id"]), 
                 "deviceName": device.get("device_name"),
                 "status": device.get("status", "Unknown"),
-                "live_link": device.get("live_link", None)  
+                "live_link": device.get("live_link", None),
+                "day": device.get("day", None),
+                "week": device.get("week", None)
             })
 
     print(devices)  
