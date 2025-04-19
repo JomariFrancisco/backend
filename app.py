@@ -158,10 +158,12 @@ def fetch_new_notif(data):
 @socketio.on('device_status_update')
 def handle_device_status_update(data):
     user_id = data.get('user_id')
+    title = data.get('title')
     message = data.get('message')
 
     socketio.emit('status_notification', {
             'user_id': user_id, 
+            'title': title,
             'message': message,
             'screen': 'Notification'  
         })
