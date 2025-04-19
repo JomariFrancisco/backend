@@ -124,12 +124,12 @@ def send_latest_data(data):
 
 @socketio.on("lame_detected")
 def lame_update(data):
-    user_id = data.get("user_id")
+    user_id = data.get("current_user_id")
     socketio.emit("lame_update", {"user_id": user_id})
 
 @socketio.on("temp_humi_update")
 def fetch_temp_humi(data):
-    user_id = data.get("current_user_id")
+    user_id = data.get("user_id")
     socketio.emit("fetch_temp_humi", {"user_id": user_id})
 
 @socketio.on("notif_update")
