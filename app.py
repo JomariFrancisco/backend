@@ -9,6 +9,7 @@ import bcrypt
 from bson import ObjectId
 from datetime import datetime, timedelta
 from pymongo import DESCENDING
+import pytz
 
 
 
@@ -39,16 +40,18 @@ def handle_get_data(data):
         user_id = data.get("user_id")
         selected_date = data.get("date")
         page = int(data.get("page", 1))
-        limit = 10  
+        limit = 10
 
         if not user_id or not selected_date:
             socketio.emit("data-response", {"success": False, "error": "Missing user_id or date"})
             return
 
-        start_date = datetime.strptime(selected_date, "%Y-%m-%d")
-        end_date = start_date + timedelta(days=1)  # Query data within the selected date range
+        # Assume backend time is in UTC+8 (e.g., Asia/Manila)
+        tz = pytz.timezone("Asia/Manila")
+        start_date = tz.localize(datetime.strptime(selected_date, "%Y-%m-%d"))
+        end_date = start_date + timedelta(days=1)
 
-        print(f"Fetching records for user_id={user_id} from {start_date} to {end_date}")  # Debug log
+        print(f"Fetching records for user_id={user_id} from {start_date} to {end_date}")
 
         records = list(data_recordings.find(
             {"user_id": user_id, "timestamp": {"$gte": start_date, "$lt": end_date}}
@@ -56,13 +59,18 @@ def handle_get_data(data):
         .skip((page - 1) * limit)
         .limit(limit))
 
-        data = [{"id": str(record["_id"]), "temperature": record.get("temperature"), "humidity": record.get("humidity"), "timestamp": record["timestamp"].isoformat()} for record in records]
+        # Convert to ISO format and include time zone offset
+        data = [{
+            "id": str(record["_id"]),
+            "temperature": record.get("temperature"),
+            "humidity": record.get("humidity"),
+            "timestamp": record["timestamp"].astimezone(tz).isoformat()
+        } for record in records]
 
-        print(f"Records found: {len(data)}")  # Debug log
-
+        print(f"Records found: {len(data)}")
         socketio.emit("data-response", {"success": True, "data": data})
     except Exception as e:
-        print(f"Error fetching data: {str(e)}")  # Debug log
+        print(f"Error fetching data: {str(e)}")
         socketio.emit("data-response", {"success": False, "error": str(e)})
 
 
