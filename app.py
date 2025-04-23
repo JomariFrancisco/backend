@@ -241,7 +241,7 @@ def handle_update_device(data):
     print(f"🛠️ Update request for device ID: {device_id} with start date: {start_date}")
 
     if not device_id or not start_date:
-        return emit('update_device_response', {
+        return socketio.emit('update_device_response', {
             'success': False,
             'message': 'Device ID and start date are required.'
         })
