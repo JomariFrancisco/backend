@@ -187,7 +187,7 @@ def handle_device_status_update(data):
 @socketio.on('disconnect_device')
 def disconnect_device(data):
     device_id = data.get('deviceId')
-
+    print(device_id)
     if not device_id:
         print("No device ID provided for disconnect.")
         return socketio.emit('device_disconnected_response', {
@@ -197,7 +197,7 @@ def disconnect_device(data):
 
     # Find the device by its ID in the database
     device = collection.find_one({"_id": ObjectId(device_id)})
-
+    print("device")
     if not device:
         print(f"Device with ID {device_id} not found.")
         return socketio.emit('device_disconnected_response', {
@@ -205,9 +205,9 @@ def disconnect_device(data):
             'message': 'Device not found'
         })
 
-    user_devices.delete_one({"deviceId": device_id})
+    user_devices.delete_one({"device_id": device_id})
     print(f"Device {device_id} removed from UserDevices collection.")
-
+    
     collection.update_one(
         {"_id": ObjectId(device_id)},
         {"$set": {"connection": "disconnected"}}
