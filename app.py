@@ -233,6 +233,50 @@ def disconnect_device(data):
         'deviceId': device_id
     })
 
+@socketio.on('update_device')
+def handle_update_device(data):
+    device_id = data.get('deviceId')
+    start_date = data.get('start_date')
+
+    print(f"🛠️ Update request for device ID: {device_id} with start date: {start_date}")
+
+    if not device_id or not start_date:
+        return emit('update_device_response', {
+            'success': False,
+            'message': 'Device ID and start date are required.'
+        })
+
+    try:
+        # Optionally validate date format
+        datetime.strptime(start_date, "%Y-%m-%d")  # Will raise if invalid
+
+        result = collection.update_one(
+            {"_id": ObjectId(device_id)},
+            {"$set": {"start_date": start_date}}
+        )
+
+        if result.modified_count == 1:
+            print(f"✅ Device {device_id} start date updated.")
+            emit('update_device_response', {
+                'success': True,
+                'message': 'Start date updated successfully',
+                'deviceId': device_id
+            })
+        else:
+            print(f"⚠️ Device not found or start date unchanged.")
+            emit('update_device_response', {
+                'success': False,
+                'message': 'Device not found or start date not updated',
+                'deviceId': device_id
+            })
+
+    except Exception as e:
+        print(f"❌ Error updating start date: {e}")
+        emit('update_device_response', {
+            'success': False,
+            'message': f"An error occurred: {str(e)}"
+        })
+
 @socketio.on('fetch_user_devices')
 def fetch_user_devices(data):
     user_id = data.get('uid')
