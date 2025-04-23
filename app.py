@@ -257,14 +257,14 @@ def handle_update_device(data):
 
         if result.modified_count == 1:
             print(f"✅ Device {device_id} start date updated.")
-            emit('update_device_response', {
+            socketio.emit('update_device_response', {
                 'success': True,
                 'message': 'Start date updated successfully',
                 'deviceId': device_id
             })
         else:
             print(f"⚠️ Device not found or start date unchanged.")
-            emit('update_device_response', {
+            socketio.emit('update_device_response', {
                 'success': False,
                 'message': 'Device not found or start date not updated',
                 'deviceId': device_id
@@ -272,7 +272,7 @@ def handle_update_device(data):
 
     except Exception as e:
         print(f"❌ Error updating start date: {e}")
-        emit('update_device_response', {
+        socketio.emit('update_device_response', {
             'success': False,
             'message': f"An error occurred: {str(e)}"
         })
