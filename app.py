@@ -86,7 +86,7 @@ def send_notifications(data):
 
     # Query the database for the user's notifications
     notifications_cursor = notifications.find({"user_id": user_id}).sort("timestamp", DESCENDING).skip((page - 1) * per_page).limit(per_page)
-    
+    tz = pytz.timezone("Asia/Manila")
     notifications_list = [
         {
             "id": str(notification["_id"]),
