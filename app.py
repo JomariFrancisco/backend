@@ -93,7 +93,7 @@ def send_notifications(data):
             "title": notification["title"],
             "message": notification["message"],
             "recommendation": notification["recommendation"],
-            "timestamp": notification["timestamp"].isoformat(),
+            "timestamp": notification["timestamp"].astimezone(tz).isoformat()
         }
         for notification in notifications_cursor
     ]
