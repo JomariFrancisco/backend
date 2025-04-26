@@ -55,10 +55,13 @@ def handle_get_hourly_extremes(data):
                 "user_id": user_id,
                 "timestamp": {"$gte": start_date, "$lt": end_date}
             }},
-            {"$project": {
-                "hour": {"$hour": "$timestamp"},
-                "temperature": 1,
-                "humidity": 1
+            {"$addFields": {
+                "hour": {
+                    "$hour": {
+                        "date": "$timestamp",
+                        "timezone": "Asia/Manila"
+                    }
+                }
             }},
             {"$group": {
                 "_id": "$hour",
@@ -69,6 +72,7 @@ def handle_get_hourly_extremes(data):
             }},
             {"$sort": {"_id": 1}}
         ])
+
 
         result = list(hourly_extremes)
 
