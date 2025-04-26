@@ -34,6 +34,60 @@ notifications = db['UserNotif']
 
 from datetime import datetime, timedelta
 
+@socketio.on("get-hourly-extremes")
+def handle_get_hourly_extremes(data):
+    try:
+        user_id = data.get("user_id")
+        selected_date = data.get("date")
+
+        if not user_id or not selected_date:
+            socketio.emit("hourly-extremes-response", {"success": False, "error": "Missing user_id or date"})
+            return
+
+        # Assume backend time is in UTC+8 (e.g., Asia/Manila)
+        tz = pytz.timezone("Asia/Manila")
+        start_date = tz.localize(datetime.strptime(selected_date, "%Y-%m-%d"))
+        end_date = start_date + timedelta(days=1)
+
+        print(f"Fetching hourly extreme data for user_id={user_id} from {start_date} to {end_date}")
+
+        # Query to find the highest and lowest temperature and humidity for each hour
+        hourly_extremes = data_recordings.aggregate([
+            {"$match": {
+                "user_id": user_id,
+                "timestamp": {"$gte": start_date, "$lt": end_date}
+            }},
+            {"$project": {
+                "hour": {"$hour": "$timestamp"},
+                "temperature": 1,
+                "humidity": 1
+            }},
+            {"$group": {
+                "_id": "$hour",
+                "highest_temp": {"$max": "$temperature"},
+                "lowest_temp": {"$min": "$temperature"},
+                "highest_humidity": {"$max": "$humidity"},
+                "lowest_humidity": {"$min": "$humidity"}
+            }},
+            {"$sort": {"_id": 1}}  # Sort by hour
+        ])
+
+        # Get the results from the aggregation
+        result = list(hourly_extremes)
+
+        if result:
+            # Send the hourly extremes back to the client
+            socketio.emit("hourly-extremes-response", {
+                "success": True,
+                "data": result
+            })
+        else:
+            socketio.emit("hourly-extremes-response", {"success": False, "error": "No data found for the selected date"})
+
+    except Exception as e:
+        print(f"Error fetching hourly extreme data: {str(e)}")
+        socketio.emit("hourly-extremes-response", {"success": False, "error": str(e)})
+
 @socketio.on("get-data")
 def handle_get_data(data):
     try:
