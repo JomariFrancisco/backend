@@ -44,14 +44,12 @@ def handle_get_hourly_extremes(data):
             socketio.emit("hourly-extremes-response", {"success": False, "error": "Missing user_id or date"})
             return
 
-        # Assume backend time is in UTC+8 (e.g., Asia/Manila)
         tz = pytz.timezone("Asia/Manila")
         start_date = tz.localize(datetime.strptime(selected_date, "%Y-%m-%d"))
         end_date = start_date + timedelta(days=1)
 
         print(f"Fetching hourly extreme data for user_id={user_id} from {start_date} to {end_date}")
 
-        # Query to find the highest and lowest temperature and humidity for each hour
         hourly_extremes = data_recordings.aggregate([
             {"$match": {
                 "user_id": user_id,
@@ -69,14 +67,26 @@ def handle_get_hourly_extremes(data):
                 "highest_humidity": {"$max": "$humidity"},
                 "lowest_humidity": {"$min": "$humidity"}
             }},
-            {"$sort": {"_id": 1}}  # Sort by hour
+            {"$sort": {"_id": 1}}
         ])
 
-        # Get the results from the aggregation
         result = list(hourly_extremes)
 
+        # Add 'timeLabel' field (e.g., "9 AM", "10 PM") for each hour
+        for entry in result:
+            hour = entry["_id"]
+            if hour == 0:
+                time_label = "12 AM"
+            elif hour < 12:
+                time_label = f"{hour} AM"
+            elif hour == 12:
+                time_label = "12 PM"
+            else:
+                time_label = f"{hour - 12} PM"
+            
+            entry["timeLabel"] = time_label
+
         if result:
-            # Send the hourly extremes back to the client
             socketio.emit("hourly-extremes-response", {
                 "success": True,
                 "data": result
@@ -87,7 +97,6 @@ def handle_get_hourly_extremes(data):
     except Exception as e:
         print(f"Error fetching hourly extreme data: {str(e)}")
         socketio.emit("hourly-extremes-response", {"success": False, "error": str(e)})
-
 @socketio.on("get-data")
 def handle_get_data(data):
     try:
