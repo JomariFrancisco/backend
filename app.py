@@ -277,7 +277,10 @@ def disconnect_device(data):
     
     collection.update_one(
         {"_id": ObjectId(device_id)},
-        {"$set": {"connection": "disconnected"}}
+        {
+            "$set": {"connection": "disconnected"},
+            "$unset": {"start_date": ""}
+        }
     )
 
     # Remove from connected devices if present
