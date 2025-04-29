@@ -580,8 +580,15 @@ def handle_device_check_and_connect(data):
 
         collection.update_one(
             {"_id": ObjectId(device_id)},
-            {"$set": {"status": "online", "connection": "connected"}}
+            {
+                "$set": {
+                    "status": "online",
+                    "connection": "connected",
+                    "start_date": start_date  # <-- add this
+                }
+            }
         )
+
         print('Device updated and saved!')
 
         user_device = user_devices.find_one({"device_id": device_id})
